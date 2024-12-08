@@ -1,9 +1,22 @@
 """Linear Score-based Causal Latent Estimation via Interventions (LSCALE-I)
 
+Setting: X = G.Z, i.e. linear transform. 
+single-node interventions.
+
+Paper: Score-based Causal Representation Learning: Linear and General Transformations
+(https://arxiv.org/abs/2402.00849)
+
 TODO: Add some file-wide comments.
 """
 
 __all__ = ["l_scale_i"]
+
+
+import sys
+import os
+# Add the repo root to sys.path so files in parent directory are accessible
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(repo_root)
 
 import logging
 
@@ -67,7 +80,7 @@ def l_scale_i(
     # Optional hard intervention routine
     hard_results = None
     if hard_intervention:
-        hat_g_h, hat_enc_n_h = _unmixing_procedure(
+        hat_g_h, hat_enc_n_h, dshatz_cor = _unmixing_procedure(
             x_n_cov,
             dsx_n_cor,
             top_order,
@@ -77,7 +90,7 @@ def l_scale_i(
 
         # Transform the encoder estimates back up to `d` dimensions
         hat_enc_h = hat_enc_n_h @ dec_colbt
-        hard_results = (hat_g_h, hat_enc_h)
+        hard_results = (hat_g_h, hat_enc_h, dshatz_cor)
 
         if hard_graph_postprocess:
             hat_g_h *= hat_g_s
@@ -252,4 +265,4 @@ def _unmixing_procedure(
     # Remove the i == j case -- these are not actual edges
     hat_g_h &= ~np.eye(n, dtype=np.bool_)
 
-    return hat_g_h, hat_enc_h
+    return hat_g_h, hat_enc_h, dshatz_cor

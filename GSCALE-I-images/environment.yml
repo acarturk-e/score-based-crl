@@ -1,0 +1,15 @@
+name: python-2024-10
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11.10
+  - numpy=2.1.2
+  - scipy=1.14.1
+  - scikit-learn=1.5.2
+  - matplotlib=3.9.2
+  - ipykernel=6.29.5
+  - pytorch=2.4.1
+  - torchaudio=2.4.1
+  - torchvision=0.19.1

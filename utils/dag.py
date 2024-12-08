@@ -5,12 +5,18 @@ Let G be a graph on n nodes with adjacency matrix A. Then, A[i, j] = True <=> i 
 This means that parents of node i in G are exactly non-zero entries in i-th column of A.
 """
 from typing import Any
+
 import numpy as np
+import numpy.typing as npt
+import networkx as nx
 
 
-def topological_order(
-    adj_mat: np.ndarray[Any, np.dtype[np.bool_]],
-) -> np.ndarray[Any, np.dtype[np.intp]] | None:
+def find_all_top_order(adj_mat: npt.NDArray[np.bool_]) -> list[npt.NDArray[np.intp]]:
+    g = nx.from_numpy_array(adj_mat, create_using=nx.DiGraph)
+    return list(map(lambda l: np.array(l, dtype=np.intp), nx.all_topological_sorts(g)))
+
+
+def topological_order(adj_mat: npt.NDArray[np.bool_]) -> npt.NDArray[np.intp] | None:
     (n, _) = adj_mat.shape
     subgraph = np.ma.MaskedArray[Any, np.dtype[np.bool_]](adj_mat)
     top_order = np.arange(n)
@@ -25,9 +31,7 @@ def topological_order(
     return top_order
 
 
-def transitive_closure(
-    adj_mat: np.ndarray[Any, np.dtype[np.bool_]],
-) -> np.ndarray[Any, np.dtype[np.bool_]] | None:
+def transitive_closure(adj_mat: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_] | None:
     """Returns `None` if input is not a DAG"""
     tr_closure = np.zeros_like(adj_mat)
     top_order = topological_order(adj_mat)
@@ -41,9 +45,7 @@ def transitive_closure(
     return tr_closure
 
 
-def transitive_reduction(
-    adj_mat: np.ndarray[Any, np.dtype[np.bool_]],
-) -> np.ndarray[Any, np.dtype[np.bool_]] | None:
+def transitive_reduction(adj_mat: npt.NDArray[np.bool_]) -> npt.NDArray[np.bool_] | None:
     """Returns `None` if input is not a DAG
 
     Since (G_1 @ G_2)[i,j] is nonzero iff there exists k such that G_1[i,k] = G_2[k, j] = True,
@@ -58,3 +60,15 @@ def transitive_reduction(
     return adj_mat & np.logical_not(
         adj_mat.astype(np.intp) @ tr_closure.astype(np.intp)
     )
+
+def confusion_mat_graph(true_g: npt.NDArray[np.bool_], hat_g: npt.NDArray[np.bool_]) -> list[list[int]]:
+    edge_cm = [
+        [
+            ( true_g &  hat_g).sum(dtype=int),
+            (~true_g &  hat_g).sum(dtype=int),
+        ], [
+            ( true_g & ~hat_g).sum(dtype=int),
+            (~true_g & ~hat_g).sum(dtype=int),
+        ]
+    ]
+    return edge_cm

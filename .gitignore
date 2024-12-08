@@ -1,7 +1,4 @@
 results/
-
-**/__pycache__/
-**/*.out
-**/*.log
-
-old_oco_test.py
+__pycache__/
+*.out
+*.log

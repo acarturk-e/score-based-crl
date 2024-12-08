@@ -17,7 +17,7 @@ class LinearSCM(StructuralCausalModel):
         super().__init__(n, fill_rate, randomize_top_order, np_rng)
 
         self._link_vector = [
-            np.empty((len(self.pa[i]),), dtype=np.float_) for i in range(self.n)
+            np.empty((len(self.pa[i]),), dtype=np.floating) for i in range(self.n)
         ]
         for i in range(self.n):
             k = len(self.pa[i])
@@ -30,9 +30,9 @@ class LinearSCM(StructuralCausalModel):
     def _link_fn(
         self,
         i: int,
-        z_pa_i: np.ndarray[Any, np.dtype[np.float_]],
+        z_pa_i: np.ndarray[Any, np.dtype[np.floating]],
         mechanism: (Literal["obs"] | Literal["hard int"] | Literal["soft int"]) = "obs",
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         if mechanism == "obs":
             return self._link_vector[i] @ z_pa_i
         elif mechanism == "hard int":
@@ -43,9 +43,9 @@ class LinearSCM(StructuralCausalModel):
     def _link_fn_grad(
         self,
         i: int,
-        z_pa_i: np.ndarray[Any, np.dtype[np.float_]],
+        z_pa_i: np.ndarray[Any, np.dtype[np.floating]],
         mechanism: (Literal["obs"] | Literal["hard int"] | Literal["soft int"]) = "obs",
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         if mechanism == "obs":
             return self._link_vector[i].T
         elif mechanism == "hard int":
