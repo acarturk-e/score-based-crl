@@ -27,7 +27,6 @@ Note: The codebase was released earlier at [https://github.com/acarturk-e/umni-c
 - `l_scale_i_test.py` : main test file for running LSCALE-I with different settings
 - `l_scale_i_analyze.py` : [INCOMPLETE] analysis of LSCALE-I results.
 
-Note: An earlier version of the codebase was released at [https://github.com/acarturk-e/score-based-crl](https://github.com/acarturk-e/score-based-crl). We recommend using the current repo.
 
 ## GSCALE-I (General Score-based Causal Latent Estimation via Interventions). 
 
