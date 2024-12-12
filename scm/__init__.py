@@ -45,18 +45,18 @@ class StructuralCausalModel(ABC):
     def _link_fn(
         self,
         i: int,
-        z_pa_i: np.ndarray[Any, np.dtype[np.float_]],
+        z_pa_i: np.ndarray[Any, np.dtype[np.floating]],
         mechanism: (Literal["obs"] | Literal["hard int"] | Literal["soft int"]) = "obs",
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         raise NotImplementedError("Abstract/pure virtual method!")
 
     @abstractmethod
     def _link_fn_grad(
         self,
         i: int,
-        z_pa_i: np.ndarray[Any, np.dtype[np.float_]],
+        z_pa_i: np.ndarray[Any, np.dtype[np.floating]],
         mechanism: (Literal["obs"] | Literal["hard int"] | Literal["soft int"]) = "obs",
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         raise NotImplementedError("Abstract/pure virtual method!")
 
     def sample(
@@ -66,7 +66,7 @@ class StructuralCausalModel(ABC):
         type_int: Literal["hard int"] | Literal["soft int"] = "hard int",
         var_change_mech: Literal["increase", "scale"] = "scale",
         var_change: float = 0.1,
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         # Initialize independent Gaussian noises
         noises = self.np_rng.standard_normal(shape + (self.n, 1))
         for i in self.top_order:
@@ -92,12 +92,12 @@ class StructuralCausalModel(ABC):
 
     def score_fn(
         self,
-        samples: np.ndarray[Any, np.dtype[np.float_]],
+        samples: np.ndarray[Any, np.dtype[np.floating]],
         nodes_int: list[int] = [],
         type_int: Literal["hard int"] | Literal["soft int"] = "hard int",
         var_change_mech: Literal["increase", "scale"] = "scale",
         var_change: float = 0.1,
-    ) -> np.ndarray[Any, np.dtype[np.float_]]:
+    ) -> np.ndarray[Any, np.dtype[np.floating]]:
         noises = np.zeros_like(samples)
         score_samples = np.zeros_like(samples)
         for i in self.top_order:

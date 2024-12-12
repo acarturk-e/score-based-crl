@@ -6,8 +6,8 @@ import numpy.typing as npt
 
 
 def subspace_intersection(
-    bases: Sequence[npt.NDArray[np.float_]],
-) -> npt.NDArray[np.float_]:
+    bases: Sequence[npt.NDArray[np.floating]],
+) -> npt.NDArray[np.floating]:
     """Given an tuple of orthonormal subspace bases, returns an orthonormal basis of their intersection.
 
     Uses Zassenhaus algorithm from https://en.wikipedia.org/wiki/Zassenhaus_algorithm"""

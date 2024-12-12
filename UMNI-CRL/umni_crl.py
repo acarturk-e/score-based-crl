@@ -35,8 +35,8 @@ def setminus(lst1: list, lst2: list) -> list:
 
 
 def umni_crl(
-    x_samples: npt.NDArray[np.float_],
-    dsx_samples: npt.NDArray[np.float_],
+    x_samples: npt.NDArray[np.floating],
+    dsx_samples: npt.NDArray[np.floating],
     hard_intervention: bool,
     hard_graph_postprocess: bool,
     atol_eigv: float,
@@ -44,12 +44,12 @@ def umni_crl(
     kappa : int,
 ) -> tuple[
     npt.NDArray[np.int_],
-    npt.NDArray[np.float_],
+    npt.NDArray[np.floating],
     npt.NDArray[np.int_],
-    npt.NDArray[np.float_],
+    npt.NDArray[np.floating],
     npt.NDArray[np.bool_],
     None | tuple[
-        npt.NDArray[np.float_],
+        npt.NDArray[np.floating],
         npt.NDArray[np.bool_],
     ],
 ]:
@@ -111,10 +111,10 @@ def umni_crl(
 
 
 def _causal_order(
-    rx_ij: npt.NDArray[np.float_],
+    rx_ij: npt.NDArray[np.floating],
     atol_eigv: float,
     kappa: int
-) -> tuple[npt.NDArray[np.float_], npt.NDArray[np.int_]]:
+) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.int_]]:
     n, _, d, _ = rx_ij.shape
     assert n == d
     logger.debug(f"Starting `_causal_order`.")
@@ -131,8 +131,8 @@ def _causal_order(
             r_w = sum(w[i] * w[j] * rx_ij[i, j, :, :] for i in range(n) for j in range(n))
 
             cm_eig = np.linalg.eigh(r_w)
-            cm_eigval: npt.NDArray[np.float_] = cm_eig.eigenvalues
-            cm_eigvec: npt.NDArray[np.float_] = cm_eig.eigenvectors
+            cm_eigval: npt.NDArray[np.floating] = cm_eig.eigenvalues
+            cm_eigvec: npt.NDArray[np.floating] = cm_eig.eigenvectors
             cm_rank = np.sum(cm_eigval > atol_eigv, dtype=np.int_)
             logger.debug(f"Rank of vt column space: {cm_rank}")
             rw_colb = cm_eigvec[:, -cm_rank:]
@@ -163,11 +163,11 @@ def _causal_order(
 
 
 def _ancestors(
-    rx_ij: npt.NDArray[np.float_],
-    h_mat_c: npt.NDArray[np.float_],
+    rx_ij: npt.NDArray[np.floating],
+    h_mat_c: npt.NDArray[np.floating],
     w_mat_c: npt.NDArray[np.int_],
     atol_eigv: float,
-) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.float_], npt.NDArray[np.int_]]:
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.floating], npt.NDArray[np.int_]]:
     n, _, d, _ = rx_ij.shape
     assert (n == d)
     logger.debug(f"Starting `_ancestors`.")
@@ -192,8 +192,8 @@ def _ancestors(
                 r_w = sum(w_new[i] * w_new[j] * rx_ij[i, j, :, :] for i in range(n) for j in range(n))
 
                 cm_eig = np.linalg.eigh(r_w)
-                cm_eigval: npt.NDArray[np.float_] = cm_eig.eigenvalues
-                cm_eigvec: npt.NDArray[np.float_] = cm_eig.eigenvectors
+                cm_eigval: npt.NDArray[np.floating] = cm_eig.eigenvalues
+                cm_eigvec: npt.NDArray[np.floating] = cm_eig.eigenvectors
                 cm_rank = np.sum(cm_eigval > atol_eigv, dtype=np.int_)
                 # cm_rank = np.sum(cm_eigval > np.sum(w_new) * atol_eigv, dtype=np.int_)
                 rw_colb = cm_eigvec[:, -cm_rank:]
@@ -227,12 +227,12 @@ def _ancestors(
 
 
 def _unmixing_cov(
-    x_samples: npt.NDArray[np.float_],
-    hat_enc_s: npt.NDArray[np.float_],
+    x_samples: npt.NDArray[np.floating],
+    hat_enc_s: npt.NDArray[np.floating],
     hat_g_s: npt.NDArray[np.bool_],
     w_mat_s: npt.NDArray[np.int_],
     atol_ci_test: float,
-) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.float_]]:
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.floating]]:
     logger.debug(f"Starting `_unmixing`.")
 
     n1, _, d, _ = x_samples.shape

@@ -27,8 +27,8 @@ import utils
 
 
 def l_scale_i(
-    x_samples: npt.NDArray[np.float_],
-    dsx_samples: npt.NDArray[np.float_],
+    x_samples: npt.NDArray[np.floating],
+    dsx_samples: npt.NDArray[np.floating],
     hard_intervention: bool,
     full_rank_scores: bool,
     hard_graph_postprocess: bool,
@@ -38,10 +38,10 @@ def l_scale_i(
 ) -> tuple[
     npt.NDArray[np.int_],
     npt.NDArray[np.bool_],
-    npt.NDArray[np.float_],
+    npt.NDArray[np.floating],
     tuple[
         npt.NDArray[np.bool_],
-        npt.NDArray[np.float_],
+        npt.NDArray[np.floating],
     ]
     | None,
 ]:
@@ -99,7 +99,7 @@ def l_scale_i(
 
 
 def _obtain_causal_order(
-    dsx_cor: npt.NDArray[np.float_],
+    dsx_cor: npt.NDArray[np.floating],
 ) -> npt.NDArray[np.int_]:
     n, _, _ = dsx_cor.shape
     logging.info(f"Starting `_obtain_causal_order`.")
@@ -110,7 +110,7 @@ def _obtain_causal_order(
     # When we find a `k` that increases the kernel dimension, record and continue
     for t in range(n - 1, 0, -1):
         logging.debug(f"{t = }, {vt = }")
-        min_eigval_l = np.ones(n) * np.finfo(np.float_).max
+        min_eigval_l = np.ones(n) * np.finfo(np.floating).max
         for k in vt:
             vt_new = list[int](i for i in vt if i != k)
             min_eigval_l[k] = np.linalg.eigvalsh(np.sum(dsx_cor[vt_new], 0))[
@@ -126,12 +126,12 @@ def _obtain_causal_order(
 
 
 def _minimize_score_variations(
-    dsx_cor: npt.NDArray[np.float_],
+    dsx_cor: npt.NDArray[np.floating],
     top_order: npt.NDArray[np.int_],
     full_rank_scores: bool,
     atol_eigv: float,
     atol_orth: float,
-) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.float_]]:
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.floating]]:
     n, d, _ = dsx_cor.shape
     logging.info(f"Starting `_minimize_score_variations`.")
     logging.debug(f"{atol_eigv = }, {atol_orth = }")
@@ -159,8 +159,8 @@ def _minimize_score_variations(
         # Find vt's column space
         cm = np.sum(dsx_cor[vts[t]], 0)
         cm_eig = np.linalg.eigh(cm)
-        cm_eigval: npt.NDArray[np.float_] = cm_eig.eigenvalues
-        cm_eigvec: npt.NDArray[np.float_] = cm_eig.eigenvectors
+        cm_eigval: npt.NDArray[np.floating] = cm_eig.eigenvalues
+        cm_eigvec: npt.NDArray[np.floating] = cm_eig.eigenvectors
         cm_rank = np.sum(cm_eigval > atol_eigv, dtype=np.int_)
         logging.debug(f"Rank of vt column space: {cm_rank}")
         vt_colb = cm_eigvec[:, -(t + 1) :]
@@ -178,8 +178,8 @@ def _minimize_score_variations(
             else:
                 cm = np.sum(dsx_cor[mtj], 0)
                 cm_eig = np.linalg.eigh(cm)
-                cm_eigval: npt.NDArray[np.float_] = cm_eig.eigenvalues
-                cm_eigvec: npt.NDArray[np.float_] = cm_eig.eigenvectors
+                cm_eigval: npt.NDArray[np.floating] = cm_eig.eigenvalues
+                cm_eigvec: npt.NDArray[np.floating] = cm_eig.eigenvectors
                 cm_rank = np.sum(cm_eigval > atol_eigv, dtype=np.int_)
 
                 # We know a priori that M_{t,t} = V_{t-1} with rank t-1.
@@ -192,7 +192,7 @@ def _minimize_score_variations(
 
             # We check if there is any vector in null space of mtj but not in vt:
             vtn_on_mtjn = mtj_nullp @ vt_colb
-            col_norms: npt.NDArray[np.float_] = np.linalg.norm(
+            col_norms: npt.NDArray[np.floating] = np.linalg.norm(
                 vtn_on_mtjn, ord=2, axis=0
             )
             if col_norms.size != 0:
@@ -224,12 +224,12 @@ def _minimize_score_variations(
 
 
 def _unmixing_procedure(
-    x_cov: npt.NDArray[np.float_],
-    dsx_cor: npt.NDArray[np.float_],
+    x_cov: npt.NDArray[np.floating],
+    dsx_cor: npt.NDArray[np.floating],
     top_order: npt.NDArray[np.int_],
-    hat_enc_s: npt.NDArray[np.float_],
+    hat_enc_s: npt.NDArray[np.floating],
     atol_edge: float,
-) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.float_]]:
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.floating]]:
     logging.info(f"Starting `_unmixing_procedure`.")
     logging.debug(f"{atol_edge = }")
 
@@ -250,7 +250,7 @@ def _unmixing_procedure(
     hat_enc_h = unmix_mat @ hat_enc_s
 
     # Normalize rows of the encoder estimate:
-    hat_enc_h: npt.NDArray[np.float_] = hat_enc_h / np.linalg.norm(
+    hat_enc_h: npt.NDArray[np.floating] = hat_enc_h / np.linalg.norm(
         hat_enc_h, ord=2, axis=1, keepdims=True
     )
 

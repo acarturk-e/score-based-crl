@@ -30,10 +30,10 @@ from . import umn
 
 
 def cov(
-    x_samples: npt.NDArray[np.float_],
-    y_samples: npt.NDArray[np.float_] | None = None,
+    x_samples: npt.NDArray[np.floating],
+    y_samples: npt.NDArray[np.floating] | None = None,
     center_data: bool = True,
-) -> npt.NDArray[np.float_]:
+) -> npt.NDArray[np.floating]:
     """Computes batch covariance.
 
     - Input shapes: `(..., nsamples, n)` and `(..., nsamples, m)`
@@ -60,8 +60,8 @@ def cov(
 
 
 def gaussian_score_est(
-    x_samples: npt.NDArray[np.float_],
-) -> Callable[[npt.NDArray[np.float_]], npt.NDArray[np.float_]]:
+    x_samples: npt.NDArray[np.floating],
+) -> Callable[[npt.NDArray[np.floating]], npt.NDArray[np.floating]]:
     """Estimates score function of multivariate Gaussian R.V.s using inverse covariance.
 
     - Input shape: `(nsamples, n, 1)`
@@ -71,8 +71,8 @@ def gaussian_score_est(
     neg_x_precision_mat = -np.linalg.inv(cov(x_samples[:, :, 0]))
 
     def score_est(
-        x_samples: npt.NDArray[np.float_],
-    ) -> npt.NDArray[np.float_]:
+        x_samples: npt.NDArray[np.floating],
+    ) -> npt.NDArray[np.floating]:
         return neg_x_precision_mat @ x_samples
 
     return score_est
@@ -136,7 +136,7 @@ def mcc(x_est: npt.NDArray[np.floating], x_gt: npt.NDArray[np.floating]) -> floa
 def generate_mixing(n,d,np_rng,DECODER_MIN_COND_NUM=0.1):
     # Build the decoder in two steps:
     # 1: Uniformly random selection of column subspace
-    decoder_q: npt.NDArray[np.float_] = scipy.stats.ortho_group(d, np_rng).rvs()[:, :n]  # type: ignore
+    decoder_q: npt.NDArray[np.floating] = scipy.stats.ortho_group(d, np_rng).rvs()[:, :n]  # type: ignore
 
     # 2: Random mixing within the subspace
     decoder_r = np_rng.random((n, n)) - 0.5
@@ -167,7 +167,7 @@ def estimate_score_fns_from_data(scm,scm_type,envs,decoder,basis_of_x_supp,nsamp
     x_samples_for_se = decoder @ z_samples_for_se
     x_samples_for_se_on_x_supp = basis_of_x_supp.T @ x_samples_for_se
 
-    hat_sx_fns = list[Callable[[npt.NDArray[np.float_]], npt.NDArray[np.float_]]]()
+    hat_sx_fns = list[Callable[[npt.NDArray[np.floating]], npt.NDArray[np.floating]]]()
 
     for i in range(len(envs)):
         # If we know the latent model is Linear Gaussian, score estimation
@@ -176,10 +176,10 @@ def estimate_score_fns_from_data(scm,scm_type,envs,decoder,basis_of_x_supp,nsamp
         if scm_type == "linear":
             hat_sx_fn_i_on_x_supp = gaussian_score_est(x_samples_for_se_on_x_supp[i])
             def hat_sx_fn_i(
-                x_in: npt.NDArray[np.float_],
+                x_in: npt.NDArray[np.floating],
                 # python sucks... capture value with this since loops are NOT scopes
-                hat_sx_fn_i_on_x_supp: Callable[[npt.NDArray[np.float_]], npt.NDArray[np.float_]] = hat_sx_fn_i_on_x_supp,
-            ) -> npt.NDArray[np.float_]:
+                hat_sx_fn_i_on_x_supp: Callable[[npt.NDArray[np.floating]], npt.NDArray[np.floating]] = hat_sx_fn_i_on_x_supp,
+            ) -> npt.NDArray[np.floating]:
                 """Reduce input down to support of x, compute estimate, transform the result back up."""
                 return basis_of_x_supp @ hat_sx_fn_i_on_x_supp(basis_of_x_supp.T @ x_in)
         else:
@@ -190,9 +190,9 @@ def estimate_score_fns_from_data(scm,scm_type,envs,decoder,basis_of_x_supp,nsamp
                     add_noise=False,
                 )
                 def hat_sx_fn_i(
-                    x_in: npt.NDArray[np.float_],
+                    x_in: npt.NDArray[np.floating],
                     hat_sx_fn_i_on_x_supp: Callable[[torch.Tensor], torch.Tensor] = hat_sx_fn_i_on_x_supp,
-                ) -> npt.NDArray[np.float_]:
+                ) -> npt.NDArray[np.floating]:
                     return basis_of_x_supp @ (
                         hat_sx_fn_i_on_x_supp(
                             torch.from_numpy(basis_of_x_supp.T @ x_in).to(torch.float32)[..., 0]
