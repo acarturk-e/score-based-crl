@@ -1,4 +1,4 @@
-name: python-2024-10
+name: gscalei-images
 channels:
   - pytorch
   - conda-forge

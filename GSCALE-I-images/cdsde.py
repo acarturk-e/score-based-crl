@@ -124,9 +124,9 @@ class LdrGaussian(nn.Module):
         assert n >= 1 and q0.shape == (n, n)
         res = cls(n)
         res.c1.bias = nn.Parameter(
-            0.5 * (q0.logdet() - q1.logdet() - m0 @ q0 @ m0 + m1 @ q1 @ m1))
-        res.c1.weight = nn.Parameter((m0 @ q0 - m1 @ q1).unsqueeze(0))
-        res.c2.weight = nn.Parameter(0.5 * (-q0 + q1))
+            0.5 * (q1.logdet() - q0.logdet() - m1 @ q1 @ m1 + m0 @ q0 @ m0))
+        res.c1.weight = nn.Parameter((m1 @ q1 - m0 @ q0).unsqueeze(0))
+        res.c2.weight = nn.Parameter(0.5 * (-q1 + q0))
         return res
 
     def forward(self, x: Tensor) -> Tensor:

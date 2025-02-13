@@ -6,9 +6,6 @@ import argparse
 import logging
 import os
 
-# For DDP utils
-from socket import gethostname
-
 import numpy as np
 
 import torch
@@ -19,13 +16,8 @@ from torch.nn.functional import binary_cross_entropy
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cuda.matmul.allow_tf32 = True
 
-# For ddp
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-
 # For data
 from torch.utils.data import TensorDataset, DataLoader, random_split
-from torch.utils.data.distributed import DistributedSampler
 
 # Local imports
 from cdsde import LdrCnn, class_density_from_ldr, score_diff_from_ldr
@@ -48,9 +40,9 @@ def get_x(data_dir: str) -> tuple[Tensor, Tensor, Tensor]:
     logging.info(f"Loaded x data.")
     logging.debug(f"{xs_obs.shape = }, {xs_hard_1.shape = }, {xs_hard_2.shape = }")
 
-    xs_obs = torch.from_numpy(xs_obs).float().moveaxis(-1, -3) / 255.0
-    xs_hard_1 = torch.from_numpy(xs_hard_1).float().moveaxis(-1, -3) / 255.0
-    xs_hard_2 = torch.from_numpy(xs_hard_2).float().moveaxis(-1, -3) / 255.0
+    xs_obs = torch.from_numpy(xs_obs).float() / 255.0
+    xs_hard_1 = torch.from_numpy(xs_hard_1).float() / 255.0
+    xs_hard_2 = torch.from_numpy(xs_hard_2).float() / 255.0
     return xs_obs, xs_hard_1, xs_hard_2
 
 
@@ -71,22 +63,20 @@ def create_logger(log_dir: str) -> logging.Logger:
 
 
 def train_ldr(
-    rank: int,
     args: argparse.Namespace,
-    logger: logging.Logger | None,
+    logger: logging.Logger,
     x1: Tensor, x2: Tensor,
     ldr_name: str,
+    device: torch.device,
 ) -> torch.nn.Module:
     """Learns the log density ratio between the data sets `x1` and `x2`
 
     Log density ratio model is the `CnnLdr` class.
-    Requires balanced data. Training is distributed.
+    Requires balanced data.
 
     `ldr_name` is the identifier appended to the parameter save file names
     for distinguishing between different LDR models during a single run."""
-    if rank == 0:
-        assert logger is not None
-        logger.info(f"Starting LDR for identifier {ldr_name}")
+    logger.info(f"Starting LDR for identifier {ldr_name}")
 
     n_samples1 = x1.shape[0]
     n_samples2 = x2.shape[0]
@@ -100,39 +90,19 @@ def train_ldr(
 
     [train_dataset, valid_dataset] = random_split(TensorDataset(xs, ys), [0.9, 0.1])
 
-    train_sampler = DistributedSampler(
-        train_dataset,
-        num_replicas=dist.get_world_size(),
-        rank=rank,
-        shuffle=True,
-        seed=args.global_seed)
-    valid_sampler = DistributedSampler(
-        valid_dataset,
-        num_replicas=dist.get_world_size(),
-        rank=rank,
-        shuffle=False,
-        seed=args.global_seed)
-
     train_loader = DataLoader(
         train_dataset,
-        batch_size=int(args.global_batch_size // dist.get_world_size()),
-        shuffle=False, # IMPORTANT set this to "False" since sampler's shuffle is True
-        sampler=train_sampler,
-        num_workers=args.num_workers, # This should be equal to the number of CPUs set per task
-        pin_memory=True,
+        batch_size=args.batch_size,
+        shuffle=True,
         drop_last=True) # Set "True" to prevent uneven splits
     valid_loader = DataLoader(
         valid_dataset,
-        batch_size=int(args.global_batch_size // dist.get_world_size()),
+        batch_size=args.batch_size,
         shuffle=False,
-        sampler=valid_sampler,
-        num_workers=args.num_workers, # This should be equal to the number of CPUs set per task
-        pin_memory=True,
         drop_last=True) # Set "True" to prevent uneven splits
 
-
     # Create model
-    ldr_model = DDP(LdrCnn())
+    ldr_model = LdrCnn().to(device)
 
     if args.load_checkpoint:
         ldr_model.load_state_dict(torch.load(os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"), weights_only=True))
@@ -148,16 +118,15 @@ def train_ldr(
         # ... which can be used to compute class probabilities via softmax
         cd_est_b = class_density_from_ldr(ldr)
         # ... which lets us compute cross entropy
-        loss = binary_cross_entropy(cd_est_b, yb, reduction="sum")
+        loss = binary_cross_entropy(cd_est_b, yb, reduction="mean")
         return loss
-
 
     for epoch in range(args.max_epochs):
         # Training
         ldr_model.train()
         running_loss = log_steps = 0
-        train_sampler.set_epoch(epoch)
         for (xb, yb) in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
             opt.zero_grad()
             assert isinstance(xb, Tensor)
             assert isinstance(yb, Tensor)
@@ -169,22 +138,17 @@ def train_ldr(
             log_steps += 1
             running_loss += loss.item()
 
-        avg_loss = torch.tensor(running_loss / log_steps)
-        dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
-        avg_loss = avg_loss.item() / dist.get_world_size()
+        avg_loss = running_loss / log_steps
 
         # End of training
-        dist.barrier()
 
-        if rank == 0:
-            assert logger is not None
-            logger.info(f"(step={epoch}), Train Loss: {avg_loss:.5f}")
+        logger.info(f"(step={epoch}), Train Loss: {avg_loss:.5f}")
 
         # Validation
         ldr_model.eval()
         running_loss = log_steps = 0
-        valid_sampler.set_epoch(epoch)
         for (xb, yb) in valid_loader:
+            xb, yb = xb.to(device), yb.to(device)
             assert isinstance(xb, Tensor)
             assert isinstance(yb, Tensor)
 
@@ -194,45 +158,29 @@ def train_ldr(
             log_steps += 1
             running_loss += loss.item()
 
-        avg_loss = torch.tensor(running_loss / log_steps)
-        dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
-        avg_loss = avg_loss.item() / dist.get_world_size()
+        avg_loss = running_loss / log_steps
 
         # End of validation
-        dist.barrier()
+        logger.info(f"(step={epoch}), Validation Loss: {avg_loss:.5f}")
+        if args.checkpoint_epochs != -1 and epoch % args.checkpoint_epochs == 0:
+            torch.save(ldr_model.state_dict(), os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"))
 
-        if rank == 0:
-            assert logger is not None
-            logger.info(f"(step={epoch}), Validation Loss: {avg_loss:.5f}")
-            if args.checkpoint_epochs != -1 and epoch % args.checkpoint_epochs == 0:
-                torch.save(ldr_model.state_dict(), os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"))
-
-    dist.barrier()
     ldr_model.eval()
     ldr_model.requires_grad_(False)
-    if rank == 0:
-        assert logger is not None
-        torch.save(ldr_model.state_dict(), os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"))
-        logger.info("Done!")
+    torch.save(ldr_model.state_dict(), os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"))
+    logger.info("Done!")
 
     return ldr_model
 
 
-def main(
-    rank: int,
-    args: argparse.Namespace
-):
-    assert args.global_batch_size % dist.get_world_size() == 0, "Global batch size must split evenly among ranks."
+def main(args: argparse.Namespace):
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
     # Set your random seed for experiment reproducibility.
-    seed = args.global_seed * dist.get_world_size() + rank
-    torch.manual_seed(seed)
+    if args.seed is not None: torch.manual_seed(args.seed)
 
-    logger = None
-    if rank == 0:
-        logger = create_logger(args.data_dir)
-        logger.info(f"Experiment directory created at {args.data_dir}")
-        logger.info(f"Batch size per rank: {args.global_batch_size // dist.get_world_size()}")
+    logger = create_logger(args.data_dir)
+    logger.info(f"Experiment directory created at {args.data_dir}")
 
     # Read data and create distributive data loader
     xs_obs, xs_hard_1, xs_hard_2 = get_x(args.data_dir)
@@ -247,22 +195,17 @@ def main(
     ldr_bw_hards = list[torch.nn.Module]()
     for env_idx in range(n):
         ldr_bw_hards.append(train_ldr(
-            rank, args, logger,
+            args, logger,
             xs_hard_1[env_idx], xs_hard_2[env_idx],
-            f"bw_hards_{env_idx}"))
+            f"bw_hards_{env_idx}", device).cpu())
 
     # 2. Hard interventions (one set suffices) and observational domain
     ldr_hard_obs = list[torch.nn.Module]()
     for env_idx in range(n):
         ldr_hard_obs.append(train_ldr(
-            rank, args, logger,
+            args, logger,
             xs_obs, xs_hard_1[env_idx],
-            f"hard_obs_{env_idx}"))
-
-    # We no longer need parallelism
-    if rank != 0: return
-
-    assert logger is not None
+            f"hard_obs_{env_idx}", device).cpu())
 
     ## Use the LDR models to estimate the score difference function
     ## on observational data points.
@@ -275,43 +218,33 @@ def main(
     # 1. Hard intervention pairs
     dsxs_bw_hards = torch.zeros((n,) + xs_obs.shape)
     for env_idx in range(n):
-        ldr_model = ldr_bw_hards[env_idx]
+        ldr_model = ldr_bw_hards[env_idx].to(device)
         with torch.no_grad():
-            dsxs_bw_hards[env_idx] = score_diff_from_ldr(ldr_model.forward, xs_obs)
+            dsxs_bw_hards[env_idx] = score_diff_from_ldr(ldr_model, xs_obs.to(device)).cpu()
     torch.save(dsxs_bw_hards, os.path.join(args.data_dir, "dsxs_bw_hards.pth"))
 
     # 2. Hard interventions (one set suffices) and observational domain
     dsxs_hard_obs = torch.zeros((n,) + xs_obs.shape)
     for env_idx in range(n):
-        ldr_model = ldr_bw_hards[env_idx]
+        ldr_model = ldr_hard_obs[env_idx].to(device)
         with torch.no_grad():
-            dsxs_hard_obs[env_idx] = score_diff_from_ldr(ldr_model.forward, xs_obs)
+            dsxs_hard_obs[env_idx] = score_diff_from_ldr(ldr_model, xs_obs.to(device)).cpu()
     torch.save(dsxs_hard_obs, os.path.join(args.data_dir, "dsxs_hard_obs.pth"))
 
     logger.info("Computed and saved the score difference samples.")
-
-    dist.destroy_process_group()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("data_dir", type=str, metavar="DIR", help="Directory to store data and logs.")
+    parser.add_argument("--device", type=str, default="cuda:0", help="Device to run the training on.")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate of optimizer.")
     parser.add_argument("--weight_decay", type=float, default=0.01, metavar="LAMBDA", help="Weight decay.")
     parser.add_argument("--max-epochs", type=int, default=10, metavar="EPOCHS", help="Number of epochs to run for each LDR model.")
-    parser.add_argument("--checkpoint-epochs", type=int, default=-1, metavar="EPOCHS", help="Epoch period of checkpoint saves. Set to -1 to not save checkpoints.")
+    parser.add_argument("--checkpoint-epochs", type=int, default=5, metavar="EPOCHS", help="Epoch period of checkpoint saves. Set to -1 to not save checkpoints.")
     parser.add_argument("--load-checkpoint", action="store_true", help="Loads all model parameters from checkpoints.")
-    parser.add_argument("--num-workers", type=int, default=8, metavar="N", help="Number of CPUs per process")
-    parser.add_argument("--global-batch-size", type=int, default=128, metavar="SIZE", help="Global, i.e., across all processes, batch size")
-    parser.add_argument("--global-seed", type=int, default=9724)
+    parser.add_argument("--batch-size", type=int, default=256, metavar="SIZE", help="Global, i.e., across all processes, batch size")
+    parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
 
-    rank          = int(os.environ["SLURM_PROCID"])
-    world_size    = int(os.environ["WORLD_SIZE"])
-    file_store    = dist.FileStore(os.path.join(args.data_dir, "_train_ldr_file_store"), 1)  # type: ignore
-
-    print(f"Hello from rank {rank} of {world_size} on {gethostname()}", flush=True)
-
-    dist.init_process_group("gloo", store=file_store, rank=rank, world_size=world_size)
-    if rank == 0: print(f"Group initialized? {dist.is_initialized()}", flush=True)
-    main(rank, args)
+    main(args)

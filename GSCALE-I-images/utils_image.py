@@ -1,5 +1,3 @@
-__all__ = ["Renderer", "mcc", "shd"]
-
 import numpy as np
 import numpy.typing as npt
 
@@ -79,7 +77,7 @@ class Renderer:
             (1.0 - 2.0 * self.ball_radius / self.scr_width) * zs)
 
         # Process the batch one by one
-        xs = np.empty(zs.shape[:-1] + (self.scr_width, self.scr_height, 3), dtype=np.uint8)
+        xs = np.empty(zs.shape[:-1] + (3, self.scr_width, self.scr_height), dtype=np.uint8)
         ci = 0
         for index in np.ndindex(zs.shape[:-1]):
             if ci % 1000 == 0:
@@ -107,7 +105,8 @@ class Renderer:
 
             canvas.draw()
             rgba = np.asarray(canvas.buffer_rgba())
-            xs[index] = rgba[:, :, :3]
+            # Discard alpha channel, move channels to first axis
+            xs[index] = np.moveaxis(rgba[:, :, :3], (0, 1, 2), (1, 2, 0))
 
             fig.clear()
 
@@ -127,7 +126,7 @@ def mcc(x_est: npt.NDArray[np.floating], x_gt: npt.NDArray[np.floating]) -> floa
     return abs_corr[row_ind, col_ind].mean()
 
 
-def shd(g_est: npt.NDArray[np.bool], g_gt: npt.NDArray[np.bool]) -> int:
+def shd(g_est: npt.NDArray[np.bool_], g_gt: npt.NDArray[np.bool_]) -> int:
     """Computes structural Hamming distance between `g_est` and `g_gt`"""
     assert g_est.ndim == 2 and g_est.shape == g_gt.shape
     n = g_est.shape[0]

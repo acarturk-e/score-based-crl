@@ -5,11 +5,12 @@ import pickle
 import numpy as np
 
 from scm.box import BoxSCM
-from utils import Renderer
+from utils_image import Renderer
 
 
 def main(args: argparse.Namespace):
-    rng = np.random.default_rng(args.global_seed)
+    # If args.seed is None, it automatically seeds from system's entropy pool
+    rng = np.random.default_rng(args.seed)
 
     # Model parameters
     num_balls: int = args.num_balls
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("data_dir", type=str, metavar="DIR", help="Directory to store data and logs")
     parser.add_argument("--graph-degree", type=int, default=2, metavar="D", help="degree d in ER(n, d) ")
     parser.add_argument("--image-size", type=int, default=64, metavar="SIZE", help="Size of the rendered RGB images. Aspect ratio is always 1.")
-    parser.add_argument("--global-seed", type=int, default=9724, metavar="SEED", help="Seed for controlling randomness")
+    parser.add_argument("--seed", type=int, default=None, metavar="SEED", help="Seed for controlling randomness")
     args = parser.parse_args()
 
     main(args)

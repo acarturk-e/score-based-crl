@@ -1,34 +1,38 @@
-"""NOTE: Dropout introduces randomness to the forward pass,
-which is a problem during Jacobian computation. Therefore, it is not
-included in these models."""
-
-__all__ = ["DenseAutoencoder", "CnnAutoencoder"]
-
 from collections import OrderedDict
 from torch import nn
 
 
 class DenseAutoencoder2(nn.Sequential):
     """Autoencoder from `d` input shape to `n` latent dimension"""
-    def __init__(self, n: int, d: int, width: int = 256):
+    def __init__(self, n: int, d: int, widths: list[int] = [256]):
         self.n = n
         self.d = d
-        self.width = width
-        od = OrderedDict()
-        od["encoder"] = nn.Sequential(
-            nn.Linear(d, width),
-            nn.ReLU(inplace=False),
-            nn.LayerNorm(width),
-            nn.Linear(width, n),
-        )
-        od["decoder"] = nn.Sequential(
-            # n
-            nn.Linear(n, width),
-            nn.ReLU(False),
-            nn.LayerNorm(width),
-            nn.Linear(width, d),
-        )
-        super(DenseAutoencoder2, self).__init__(od)
+        assert len(widths) > 0, "there is no such thing as MLP w/o hidden layers"
+        self.widths = widths
+        # Construct the encoder
+        encoder = nn.Sequential()
+        encoder.append(nn.Linear(d, widths[0]))
+        encoder.append(nn.ReLU(inplace=False))
+        encoder.append(nn.LayerNorm(widths[0]))
+        for i in range(1, len(widths)):
+            encoder.append(nn.Linear(widths[i-1], widths[i]))
+            encoder.append(nn.ReLU(inplace=False))
+            encoder.append(nn.LayerNorm(widths[i]))
+        encoder.append(nn.Linear(widths[-1], n))
+        # Construct the decoder using widths in reverse order
+        decoder = nn.Sequential()
+        decoder.append(nn.Linear(n, widths[-1]))
+        decoder.append(nn.ReLU(inplace=False))
+        decoder.append(nn.LayerNorm(widths[-1]))
+        for i in reversed(range(0, len(widths)-1)):
+            decoder.append(nn.Linear(widths[i+1], widths[i]))
+            decoder.append(nn.ReLU(inplace=False))
+            decoder.append(nn.LayerNorm(widths[i]))
+        decoder.append(nn.Linear(widths[0], d))
+        super(DenseAutoencoder2, self).__init__(OrderedDict((
+            ("encoder", encoder),
+            ("decoder", decoder),
+        )))
 
 
 class DenseAutoencoder(nn.Sequential):
@@ -72,22 +76,22 @@ class CnnAutoencoder(nn.Sequential):
         od["encoder"] = nn.Sequential(
             # 3 x 64^2
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(64),
+            nn.BatchNorm2d(64, track_running_stats=False),
             nn.ReLU(False),
             nn.MaxPool2d(2, 2),
             # 64 x 32^2
             nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(128),
+            nn.BatchNorm2d(128, track_running_stats=False),
             nn.ReLU(False),
             nn.MaxPool2d(2, 2),
             # 128 x 16^2
             nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(256),
+            nn.BatchNorm2d(256, track_running_stats=False),
             nn.ReLU(False),
             nn.MaxPool2d(2, 2),
             # 256 x 8^2
             nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(512),
+            nn.BatchNorm2d(512, track_running_stats=False),
             nn.ReLU(False),
             nn.MaxPool2d(2, 2),
             # 512 x 4^2
@@ -104,17 +108,17 @@ class CnnAutoencoder(nn.Sequential):
             # 512 x 4^2
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.ConvTranspose2d(512, 256, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(256),
+            nn.BatchNorm2d(256, track_running_stats=False),
             nn.ReLU(False),
             # 256 x 8^2
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(128),
+            nn.BatchNorm2d(128, track_running_stats=False),
             nn.ReLU(False),
             # 128 x 16^2
             nn.UpsamplingNearest2d(scale_factor=2),
             nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1, padding=1),
-            nn.LayerNorm(64),
+            nn.BatchNorm2d(64, track_running_stats=False),
             nn.ReLU(False),
             # 64 x 32^2
             nn.UpsamplingNearest2d(scale_factor=2),
