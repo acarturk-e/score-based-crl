@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 
 # Local imports
 from autoencoders import DenseAutoencoder2
-import utils
+import utils_image
 
 
 def get_data(data_dir: str, latent_dim: int) -> tuple[Tensor, Tensor, Tensor]:
@@ -181,7 +181,7 @@ def main(args: argparse.Namespace):
             # also add a MCC check for every checkpoint.
             zhats_obs = autoenc.encoder(ys_obs.to(device))
             assert isinstance(zhats_obs, Tensor)
-            z_mcc = utils.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
+            z_mcc = utils_image.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
             logger.info(f"(MCC={z_mcc:.4f})")
 
     autoenc.eval()

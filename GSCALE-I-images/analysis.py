@@ -2,12 +2,17 @@
 import argparse
 import os
 import pickle
+import sys
 
 import numpy as np
 import numpy.typing as npt
 import torch
 from torch import Tensor
 from torch.func import jacfwd  # type: ignore
+
+# Add the repo root to sys.path so files in parent directory are accessible
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(repo_root)
 
 from autoencoders import DenseAutoencoder as Autoencoder
 from scm.box import BoxSCM
@@ -72,7 +77,7 @@ def main(data_dir: str):
     # Mean correlation coefficient
     zhats_obs = encoder(xs_obs)
     assert isinstance(zhats_obs, Tensor)
-    z_mcc = utils.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
+    z_mcc = utils_image.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
     print(f"{z_mcc = }")
 
     ## Latent graph recovery

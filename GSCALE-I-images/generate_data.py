@@ -1,8 +1,13 @@
 import argparse
 import os
 import pickle
+import sys
 
 import numpy as np
+
+# Add the repo root to sys.path so files in parent directory are accessible
+repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(repo_root)
 
 from scm.box import BoxSCM
 from utils_image import Renderer
