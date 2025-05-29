@@ -1,8 +1,8 @@
 # Algorithms for Score-based Causal Representation Learning
 
-This repository contains implementations of the algorithms in our several papers on **score-based causal representation learning**. 
+This repository contains implementations of our algorithms in several papers on **score-based causal representation learning**. 
 
-Note: We collect our multiple CRL algorithms from different papers here, so the overall repository needs some cleanup and enriched commentation. If you try to use any piece of this code and run into issues, please feel free to contact us, we would be happy to help. Earlier versions of some codes here were released at separate repos that are no longer actively maintained, please see the references below.
+Note: We collect our multiple CRL algorithms from different papers here, so the overall repository needs some cleanup and enriched commentation. See the README files in specific folders for more details. If you encounter any issues while using this code, please contact us, we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
 
 
 ## UMNI-CRL (Unknown Multi-node Interventional CRL)
@@ -19,13 +19,13 @@ Note: The codebase was released earlier at [https://github.com/acarturk-e/umni-c
 
 ## LSCALE-I (Linear Score-based Causal Latent Estimation via Interventions). 
 
-### **Paper**: Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849)
+### **Paper**: Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849), published at JMLR (05/2025).
 
 **Setting**: Linear transformations ($$X = \mathbf{G} \cdot Z$$) and single-node interventions (*one* per node)
  
 - `l_scale_i.py` : contains (sub-)algorithms for LSCALE-I
 - `l_scale_i_test.py` : main test file for running LSCALE-I with different settings
-- `l_scale_i_analyze.py` : [INCOMPLETE] analysis of LSCALE-I results.
+- `l_scale_i_analyze.py` : analysis of LSCALE-I results.
 
 
 ## GSCALE-I (General Score-based Causal Latent Estimation via Interventions). 
