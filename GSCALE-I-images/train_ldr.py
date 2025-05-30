@@ -20,7 +20,7 @@ torch.backends.cuda.matmul.allow_tf32 = True
 from torch.utils.data import TensorDataset, DataLoader, random_split
 
 # Local imports
-from cdsde import LdrCnn, class_density_from_ldr, score_diff_from_ldr
+from cdsde import LdrCnn, LdrNn, class_density_from_ldr, score_diff_from_ldr
 
 
 def get_x(data_dir: str) -> tuple[Tensor, Tensor, Tensor]:
@@ -45,6 +45,20 @@ def get_x(data_dir: str) -> tuple[Tensor, Tensor, Tensor]:
     xs_hard_2 = torch.from_numpy(xs_hard_2).float() / 255.0
     return xs_obs, xs_hard_1, xs_hard_2
 
+def get_y(data_dir: str) -> tuple[Tensor, Tensor, Tensor]:
+    """Returns tuple `(ys_obs, ys_hard_1, ys_hard_2)`
+
+    Shapes: `(nsamples, 64)` for `ys_obs`,
+    and `(n, nsamples, 64)` for `ys_hard_1` and `ys_hard_2`"""
+    
+    ys_obs = torch.load(os.path.join(data_dir, f"ys_obs_64.pth"), weights_only=True)
+    ys_hard_1 = torch.load(os.path.join(data_dir, f"ys_hard_1_64.pth"), weights_only=True)
+    ys_hard_2 = torch.load(os.path.join(data_dir, f"ys_hard_2_64.pth"), weights_only=True)
+
+    logging.info(f"Loaded y data.")
+    logging.debug(f"{ys_obs.shape = }, {ys_hard_1.shape = }, {ys_hard_2.shape = }")
+
+    return ys_obs, ys_hard_1, ys_hard_2
 
 def create_logger(log_dir: str) -> logging.Logger:
     """Create a logger that writes to a log file (DEBUG level) and stdout (INFO level)"""
@@ -68,6 +82,7 @@ def train_ldr(
     x1: Tensor, x2: Tensor,
     ldr_name: str,
     device: torch.device,
+    modality: str = "image",
 ) -> torch.nn.Module:
     """Learns the log density ratio between the data sets `x1` and `x2`
 
@@ -102,7 +117,12 @@ def train_ldr(
         drop_last=True) # Set "True" to prevent uneven splits
 
     # Create model
-    ldr_model = LdrCnn().to(device)
+    if modality == "image":
+        ldr_model = LdrCnn().to(device)
+    elif modality == "vector":
+        ldr_model = LdrNn(n = data_shape[0]).to(device)
+    else:
+        raise ValueError(f"Unknown modality: {modality}")
 
     if args.load_checkpoint:
         ldr_model.load_state_dict(torch.load(os.path.join(args.data_dir, "ldr_model_" + ldr_name + ".pth"), weights_only=True))
@@ -183,11 +203,17 @@ def main(args: argparse.Namespace):
     logger.info(f"Experiment directory created at {args.data_dir}")
 
     # Read data and create distributive data loader
-    xs_obs, xs_hard_1, xs_hard_2 = get_x(args.data_dir)
+    if args.source == "x":
+        xs_obs, xs_hard_1, xs_hard_2 = get_x(args.data_dir)
+    elif args.source == "y":
+        # if we are using embeddings for score estimation, modality must be "vector"
+        assert args.modality == "vector"
+        xs_obs, xs_hard_1, xs_hard_2 = get_y(args.data_dir)
+    
     n = xs_hard_1.shape[0]
     assert n == xs_hard_2.shape[0]
-    image_shape = xs_obs.shape[1:]
-    assert image_shape == xs_hard_1.shape[2:] and image_shape == xs_hard_2.shape[2:]
+    #data_shape = xs_obs.shape[1:]
+    #assert data_shape == xs_hard_1.shape[2:] and data_shape == xs_hard_2.shape[2:]
 
     ## Compute log density ratio between
 
@@ -237,7 +263,9 @@ def main(args: argparse.Namespace):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("data_dir", type=str, metavar="DIR", help="Directory to store data and logs.")
-    parser.add_argument("--device", type=str, default="cuda:0", help="Device to run the training on.")
+    parser.add_argument("--modality", type=str, default="image", help="Use image or vector")
+    parser.add_argument("--source", type=str, default="x", help="Use x (original data) or y (embedding)")
+    parser.add_argument("--device", type=str, default="cpu", help="Device to run the training on.")
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate of optimizer.")
     parser.add_argument("--weight_decay", type=float, default=0.01, metavar="LAMBDA", help="Weight decay.")
     parser.add_argument("--max-epochs", type=int, default=10, metavar="EPOCHS", help="Number of epochs to run for each LDR model.")
