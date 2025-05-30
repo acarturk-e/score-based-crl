@@ -1,11 +1,11 @@
-name: gscalei-images
+name: ScoreCRL
 channels:
   - pytorch
   - conda-forge
   - defaults
 dependencies:
   - python=3.11.10
-  - numpy=2.1.2
+  - numpy
   - scipy=1.14.1
   - scikit-learn=1.5.2
   - matplotlib=3.9.2
