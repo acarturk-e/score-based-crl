@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -21,8 +22,8 @@ from autoencoders import DenseAutoencoder2
 import utils_image
 
 
-def get_data(data_dir: str, latent_dim: int) -> tuple[Tensor, Tensor, Tensor]:
-    """Return all data: z, y, and dsys_bw_hards"""
+def get_data(data_dir: str, latent_dim: int, num_int=2) -> tuple[Tensor, Tensor, Tensor]:
+    """Return all data: z, y, and dsys_bw_hards (or dsys_hard_obs)"""
     data = np.load(os.path.join(data_dir, "z_and_x.npz"))
     n = data["zs_obs"].shape[1]
     zs_obs = data["zs_obs"]
@@ -30,9 +31,16 @@ def get_data(data_dir: str, latent_dim: int) -> tuple[Tensor, Tensor, Tensor]:
     ys_obs = torch.load(os.path.join(data_dir, f"ys_obs_{latent_dim}.pth"), weights_only=True)
     logging.info(f"Loaded z and y data with shapes {zs_obs.shape = }, {ys_obs.shape = }")
 
-    dsys_bw_hards = torch.load(os.path.join(data_dir, f"dsys_bw_hards_{latent_dim}.pth"), weights_only=True)
-    logging.info(f"Loaded dsys data with shape {dsys_bw_hards.shape = }")
-    return zs_obs, ys_obs, dsys_bw_hards
+    if num_int == 2:
+        dsys_bw_hards = torch.load(os.path.join(data_dir, f"dsys_bw_hards_{latent_dim}.pth"), weights_only=True)
+        logging.info(f"Two int/node: Loaded dsys data with shape {dsys_bw_hards.shape = }")
+        return zs_obs, ys_obs, dsys_bw_hards
+    elif num_int == 1:
+        dsys_hard_obs = torch.load(os.path.join(data_dir, f"dsys_hard_obs_{latent_dim}.pth"), weights_only=True)
+        logging.info(f"Loaded dsys data with shape {dsys_hard_obs.shape = }")
+        return zs_obs, ys_obs, dsys_hard_obs 
+    else:
+        raise ValueError(f"num_int must be 1 or 2, not {num_int}")
 
 
 def create_logger(log_dir: str) -> logging.Logger:
@@ -40,7 +48,8 @@ def create_logger(log_dir: str) -> logging.Logger:
     os.makedirs(log_dir, exist_ok=True)
     h_out = logging.StreamHandler()
     h_out.setLevel(logging.INFO)
-    h_file = logging.FileHandler(os.path.join(log_dir, "train_autoenc_disentangle_cpu.log"), mode="w")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    h_file = logging.FileHandler(os.path.join(log_dir, f"train_autoenc_disentangle_cpu_{timestamp}.log"), mode="w")
     h_file.setLevel(logging.DEBUG)
     logging.basicConfig(
         level=logging.DEBUG,
@@ -59,6 +68,7 @@ def main(args: argparse.Namespace):
     latent_dim: int = args.latent_dim
 
     lambda1: float = args.lambda1
+    num_int: int = args.num_int
 
     # Set your random seed for experiment reproducibility.
     if args.seed is not None: torch.manual_seed(args.seed)
@@ -115,10 +125,9 @@ def main(args: argparse.Namespace):
         jb = vmap(jacfwd(decoder))(zhatb)
         dszhatb = dsyb @ jb
         dt = dszhatb.abs().mean(0)
-        # loss_main = dt.abs().sum()
-        # loss_main = dt.abs().sum() + zhatb.pow(2).mean(0).mean()
         loss_main = (dt - torch.eye(n, device=yb.device)).abs().sum()
-
+        #loss_main = dt.fill_diagonal_(0.0).sum()
+        
         loss_reconstr = lambda1 * (yhatb - yb).pow(2).mean(0).sum()
         loss = loss_main + loss_reconstr
         return loss, loss_reconstr.detach(), loss_main.detach()
@@ -175,6 +184,7 @@ def main(args: argparse.Namespace):
         lr_sched.step()
 
         logger.info(f"({epoch=}), Validation Loss: {avg_loss:.5f} (reconstr={avg_loss_reconstr:.5f}, main={avg_loss_main:.5f})")
+        
         if args.checkpoint_epochs != -1 and epoch % args.checkpoint_epochs == 0:
             torch.save(autoenc.state_dict(), os.path.join(args.data_dir, f"autoenc_disentangle_{latent_dim}.pth"))
 
@@ -184,6 +194,12 @@ def main(args: argparse.Namespace):
             z_mcc = utils_image.mcc(zhats_obs.detach().cpu().numpy(), zs_obs.detach().cpu().numpy())
             logger.info(f"(MCC={z_mcc:.4f})")
 
+            js_obs = vmap(jacfwd(decoder))(zhats_obs)
+            dszhat = dsys.moveaxis(0, 1) @ js_obs
+            dt = dszhat.abs().mean(0)
+            logger.info(f"\n dt:{dt}")
+
+    
     autoenc.eval()
     autoenc.requires_grad_(False)
     torch.save(autoenc.state_dict(), os.path.join(args.data_dir, f"autoenc_disentangle_{latent_dim}.pth"))
@@ -194,8 +210,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("data_dir", type=str, metavar="DIR", help="Directory to store data and logs.")
     parser.add_argument("--latent-dim", type=int, metavar="DIM", default=64, help="Dimension of the dim-reduced representations.")
-    parser.add_argument("--device", type=str, default="cuda:0", help="Device to run the training on.")
-    parser.add_argument("--lambda1", type=float, default=1, help="Scale for reconstruction loss.")
+    parser.add_argument("--device", type=str, default="cpu", help="Device to run the training on.")
+    parser.add_argument("--lambda1", type=float, default=0.1, help="Scale for reconstruction loss.")
     parser.add_argument("--lr", type=float, default=1e-2, help="Learning rate of optimizer.")
     parser.add_argument("--weight-decay", type=float, default=0.01, metavar="LAMBDA", help="Weight decay.")
     parser.add_argument("--max-epochs", type=int, default=150, metavar="EPOCHS", help="Number of epochs to run for each LDR model.")
@@ -203,9 +219,12 @@ if __name__ == "__main__":
     parser.add_argument("--load-checkpoint", action="store_true", help="Loads all model parameters from checkpoints.")
     parser.add_argument("--batch-size", type=int, default=256, metavar="SIZE", help="Global, i.e., across all processes, batch size")
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--num-int", type=int, default=2, help="Number of interventions per node. 1 or 2. For theoretical guarantees, default is 2.")
+
     args = parser.parse_args()
 
     ### NOTE HARD-CODED!
     torch.set_num_threads(32)
 
     main(args)
+
