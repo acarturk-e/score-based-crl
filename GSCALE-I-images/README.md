@@ -9,6 +9,8 @@ To run an end-to-end experiment, simply run the bash scripts.
 `run_5_times.sh` is the baseline setting: It generates image data
 for 3 balls data and trains a two-step autoencoder 5 times.
 
+(see Section 7.5 of the paper for experiment results)
+
 ### Files and structure
 
 - `generate_data.py`: Latent sampling & image rendering
@@ -22,7 +24,7 @@ for 3 balls data and trains a two-step autoencoder 5 times.
     output domain of the step 1 encoder
 - `train_disentangle.py`: Train an autoencoder from step 1 encoder
     output subject to "main loss": Aims to disentangle the learned
-    representations using the score difference based loss
+    representations using the score difference-based loss
 
 ### On disentanglement loss
 
