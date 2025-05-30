@@ -9,7 +9,9 @@ To run an end-to-end experiment, simply run the bash scripts.
 `run_5_times.sh` is the baseline setting: It generates image data
 for 3 balls data and trains a two-step autoencoder 5 times.
 
-(see Section 7.5 of the paper for experiment results)
+See Section 7.5 of the paper for experiment results.
+
+TODO: analysis files are not cleaned-up.
 
 ### Files and structure
 
