@@ -2,7 +2,7 @@
 
 This repository contains implementations of our algorithms in several papers on **score-based causal representation learning**. 
 
-**Release notes**: This repo contains our multiple CRL algorithms from different papers here, it is possible that there are minor conflicts across different algorithms due to different structures. See the README files in specific folders for running each algorithm.
+**Release notes**: This repo contains our multiple CRL algorithms from different papers. See the README files in specific folders for running each algorithm.
 If you encounter any issues while using this code, please contact us, we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
 
 We use `conda` to manage dependencies. Please run
