@@ -1,6 +1,8 @@
 ## LSCALE-I (Linear Score-based Causal Latent Estimation via Interventions). 
 
-### **Paper**: Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849) - published at JMLR
+### **Paper**: Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849) - published at JMLR 05/2025
+See Section 7.1 and 7.3 of the paper for experiment results.
+
 
 **Setting**: Linear transformations ($$X = \mathbf{G} \cdot Z$$) and single-node interventions (*one* per node)
  
