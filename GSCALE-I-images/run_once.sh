@@ -21,7 +21,7 @@ fi
 DEVICE=$3
 
 eval "$(conda shell.bash hook)" | exit
-conda activate gscalei-images | exit
+conda activate ScoreCRL | exit
 python generate_data.py $NUM_BALLS $NUM_SAMPLES $DATADIR | exit
 python train_ldr.py --device $DEVICE $DATADIR | exit
 python train_reconstruct.py --device $DEVICE $DATADIR | exit
