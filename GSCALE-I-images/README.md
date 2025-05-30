@@ -1,5 +1,8 @@
 # GSCALE-I on image data
 
+### Paper: Score-based Causal Representation Learning: Linear and General Transformations
+(https://arxiv.org/abs/2402.00849), published at JMLR 05/2025. See Section 7.5 for experiments on image data.
+
 We use `conda` to manage dependencies. Please run
 ``conda env create -f environment.yml``
 to create the conda environment and install required packages.
@@ -9,7 +12,6 @@ To run an end-to-end experiment, simply run the bash scripts.
 `run_5_times.sh` is the baseline setting: It generates image data
 for 3 balls data and trains a two-step autoencoder 5 times.
 
-See Section 7.5 of the paper for experiment results.
 
 TODO: analysis files are not cleaned-up.
 
