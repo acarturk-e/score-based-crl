@@ -2,20 +2,35 @@
 
 This repository contains implementations of our algorithms in several papers on **score-based causal representation learning**. 
 
-Note: We collect our multiple CRL algorithms from different papers here, so the overall repository needs some cleanup and enriched commentation. See the README files in specific folders for more details. If you encounter any issues while using this code, please contact us, we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
+**Release notes**: This repo contains our multiple CRL algorithms from different papers here, it is possible that there are minor conflicts across different algorithms due to different structures. See the README files in specific folders for running each algorithm.
+If you encounter any issues while using this code, please contact us, we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
 
+We use `conda` to manage dependencies. Please run
+``conda env create -f environment.yml``
+to create the conda environment `ScoreCRL` and install required packages.
 
-## UMNI-CRL (Unknown Multi-node Interventional CRL)
+## GSCALE-I (General Score-based Causal Latent Estimation via Interventions). 
 
-### **Paper**: Linear Causal Representation Learning from Unknown Multi-node Interventions (https://arxiv.org/abs/2402.00849) at NeurIPS 2024
+### **Paper**: 
+- [**Score-based Causal Representation Learning: Linear and General Transformations**](https://arxiv.org/abs/2402.00849) at JMLR 05/2025, *and*
+- [**General Identifiability and Achievability for Causal Representation Learning**](https://arxiv.org/abs/2310.15450) at AISTATS 2024.
 
-**Setting**: Linear transformations ($$X = \mathbf{G} \cdot Z$$) and unknown multi-node interventions
+Notes:
+- *Section 6: CRL under General Transformations* of the JMLR'2025 paper is an extended version of the AISTATS'2024 paper. The extended paper contains a much broader evaluation suite. 
+- An outdated version of GSCALE-I code (for AISTATS'2024 paper) was [released earlier](https://github.com/bvarici/score-general-id-CRL). We recommend using *this* up-to-date repo.
 
-- `umni_crl.py` : contains (sub-)algorithms for UMNI-CRL
-- `umni_crl_test.py` : main test file for running UMNI-CRL with different settings
-- `umni_crl_analyze.py` : [INCOMPLETE] analysis of UMNI-CRL results
+**Setting**: General transformations ($$X = g(Z)$$) and single-node interventions (*two* per node)
 
-Note: The codebase was released earlier at [https://github.com/acarturk-e/umni-crl](https://github.com/acarturk-e/umni-crl). We recommend using the current repo.
+We use GSCALE-I algorithm on several sub-settings as follows.
+
+### GSCALE-I-images
+Codes for the experiments on the image dataset (Section 7.3). Please see the detailed README file and the notebook within the corresponding folder.
+
+### GSCALE-I-GLM
+For the setting transform $g$ is set to a single-layer MLP, or a parameterized generalized linear model where $$X = \tanh(\mathbf{G} \cdot Z)$$ (see Section 7.2.1 of the paper). See the detailed README file within the corresponding folder.
+
+### GSCALE-I-MLP
+For the setting transform $g$ is set to an MLP with tanh activations. Codes for the experiments with 3-layer ML (see Section 7.2.2 of the paper). See the detailed README file within the corresponding folder.
 
 ## LSCALE-I (Linear Score-based Causal Latent Estimation via Interventions). 
 
@@ -28,29 +43,18 @@ Note: The codebase was released earlier at [https://github.com/acarturk-e/umni-c
 - `l_scale_i_analyze.py` : analysis of LSCALE-I results.
 
 
-## GSCALE-I (General Score-based Causal Latent Estimation via Interventions). 
+## UMNI-CRL (Unknown Multi-node Interventional CRL)
 
-### **Paper**: 
-- General Identifiability and Achievability for Causal Representation Learning (https://arxiv.org/abs/2310.15450) at AISTATS 2024, *and*
-- Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849) 
+### **Paper**: [Linear Causal Representation Learning from Unknown Multi-node Interventions](https://arxiv.org/abs/2402.00849) at NeurIPS 2024
 
-Some notes:
-- *Section 6: CRL under General Transformations* of the second paper is based on the first paper. 
-- The first paper (AISTATS 2024) contains some preliminary experiments with GSCALE-I, so an outdated version of GSCALE-I code was released earlier at https://github.com/bvarici/score-general-id-CRL. We recommend using the current repo.
-- The second paper (preprint) contains additional experiments.
+**Setting**: Linear transformations ($$X = \mathbf{G} \cdot Z$$) and unknown multi-node interventions
 
-**Setting**: General transformations ($$X = g(Z)$$) and single-node interventions (*two* per node)
+- `umni_crl.py` : contains (sub-)algorithms for UMNI-CRL
+- `umni_crl_test.py` : main test file for running UMNI-CRL with different settings
+- `umni_crl_analyze.py` : [INCOMPLETE] analysis of UMNI-CRL results
 
-In the AISTATS paper (Section 6.2) and the extended paper (Section 7.2), we consider a parameterized general linear model setting $$X = \tanh(\mathbf{G} \cdot Z)$$.
-- `g_scale_i_algos.py`: contains GSCALE-I algorithm specialized to this tanh + linear transform setting.
-- `g_scale_i_vector_test.py`: main test file for running this algorithm
-- `g_scale_i_analyze.py`: [INCOMPLETE] analysis of the results
+Note: The codebase was [released earlier](https://github.com/acarturk-e/umni-crl). We recommend using the current repo.
 
-## GSCALE-I-images
-
-### **Paper**: Score-based Causal Representation Learning: Linear and General Transformations (https://arxiv.org/abs/2402.00849)
-
-Codes for the experiments on the image dataset (Section 7.3). Please see the detailed README file and the notebook within the corresponding folder.
 
 ## Citation
 
