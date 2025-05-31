@@ -9,7 +9,7 @@ to create the conda environment and install required packages.
 
 **Setting**: $X = g(Z)$ general transform, single-node hard interventions.
 
-We consider $g$ that are 1 or 3-layer MLPs with tanh activation function. For instance, for 1-layer, we have $X = tanh(G.Z)$ (see Section 7.2 of the paper for details).
+We consider $g$ that are 1 or 3-layer MLPs with tanh activation function (see Section 7.2 of the paper for details).
 
 Note that for 1-layer case, we can more directly estimate the parameter matrix $G$ (refer to `GSCALE-I-GLM` folder and `g_scale_i_glm_tanh` function therein).
 
