@@ -27,11 +27,10 @@ We use GSCALE-I algorithm on several sub-settings as follows.
 Codes for the experiments on the image dataset (Section 7.3). Please see the detailed README file and the notebook within the corresponding folder.
 
 ### GSCALE-I-GLM
-For the setting transform $g$ is set to a single-layer MLP, or a parameterized generalized linear model where $$X = \tanh(\mathbf{G} \cdot Z)$$ (see Section 7.2.1 of the paper). See the detailed README file within the corresponding folder.
+For the setting transform $g$ is set to a single-layer MLP, or a parameterized generalized linear model where $$X = \tanh(\mathbf{G} \cdot Z)$$ (see Section 7.2.1 of the paper). See the detailed README within the corresponding folder.
 
 ### GSCALE-I-MLP
 For the setting transform $g$ is set to an MLP with tanh activations. Codes for the experiments with 3-layer ML (see Section 7.2.2 of the paper). See the detailed README file within the corresponding folder.
-[TODO: update these files]
 
 ## LSCALE-I (Linear Score-based Causal Latent Estimation via Interventions). 
 
