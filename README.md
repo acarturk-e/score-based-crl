@@ -3,7 +3,7 @@
 This repository contains implementations of our algorithms in several papers on **score-based causal representation learning**. 
 
 **Release notes**: This repo contains our multiple CRL algorithms from different papers. See the README files in specific folders for running each algorithm.
-If you encounter any issues while using this code, please contact us, we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
+If you encounter any issues while using this code, please contact either Burak Varıcı (bvarici@andrew.cmu.edu) or Emre Acartürk (acarte@rpi.edu), we would be happy to help. Earlier versions of some codes here were released in separate repositories that are no longer actively maintained. Please see the references below.
 
 We use `conda` to manage dependencies. Please run
 ``conda env create -f environment.yml``
@@ -62,11 +62,14 @@ If you find these algorithms helpful, please consider citing the corresponding p
 
 **Bibtex**
 ```
-@article{varici2024score,
-  title={Score-based causal representation learning: Linear and General Transformations},
-  author={Var{\i}c{\i}, Burak and Acart{\"u}rk, Emre and Shanmugam, Karthikeyan and Kumar, Abhishek and Tajer, Ali},
-  journal={arXiv:2402.00849},
-  year={2024},
+@article{varici2025score,
+  title={Score-based causal representation learning: Linear and general transformations},
+  author={Varici, Burak and Acart{\"u}rk, Emre and Shanmugam, Karthikeyan and Kumar, Abhishek and Tajer, Ali},
+  journal={Journal of Machine Learning Research},
+  volume={26},
+  number={112},
+  pages={1--90},
+  year={2025}
 }
 
 @inproceedings{varici2024linear,
